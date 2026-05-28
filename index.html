@@ -21,27 +21,122 @@
 </head>
 <body>
   <div class="app">
-    <header class="hero"><div><div class="eyebrow">⚡ Ctrl + V Sprite Sheet Preview Tool</div><h1>Sprite Paste Player</h1><p>스프라이트 이미지를 복사해서 붙여넣으면 바로 프레임 재생을 확인하는 웹툴입니다. 포토샵/브라우저/캡처 이미지 붙여넣기, 파일 업로드, 드래그 앤 드롭을 지원합니다.</p></div><div class="hero-actions"><button class="btn accent" id="pickFileBtn">이미지 선택</button><button class="btn secondary" id="pasteHelpBtn">붙여넣기 안내</button><button class="btn secondary" id="resetBtn">초기화</button><input class="hidden-file" type="file" id="fileInput" accept="image/*" /></div></header>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">⚡ Ctrl + V Sprite Sheet Preview Tool</div>
+        <h1>Sprite Paste Player</h1>
+        <p>스프라이트 이미지를 복사해서 붙여넣으면 바로 프레임 재생을 확인하는 웹툴입니다. 포토샵/브라우저/캡처 이미지 붙여넣기, 파일 업로드, 드래그 앤 드롭을 지원합니다.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn accent" id="pickFileBtn">이미지 선택</button>
+        <button class="btn secondary" id="pasteHelpBtn">붙여넣기 안내</button>
+        <button class="btn secondary" id="resetBtn">초기화</button>
+        <input class="hidden-file" type="file" id="fileInput" accept="image/*" />
+      </div>
+    </header>
+
     <main class="layout">
-      <section class="stage-card" id="stageCard"><div class="stage-top"><div class="status"><span class="dot" id="statusDot"></span><span class="file-name" id="statusText">이미지를 붙여넣거나 파일을 선택해줘</span></div><div class="status" id="frameText">Frame - / -</div></div><div class="stage checker" id="stage"><div class="drop-overlay">여기에 이미지를 놓으면 바로 로드돼</div><div class="empty" id="emptyState"><div class="empty-icon">🖼️</div><h2>스프라이트 시트를 붙여넣어줘</h2><p>이미지를 복사한 다음 이 페이지에서 <kbd>Ctrl</kbd> + <kbd>V</kbd>를 누르면 바로 재생됩니다.<br />파일을 끌어다 놓거나 이미지 선택 버튼을 써도 됩니다.</p></div><div class="preview-wrap" id="previewWrap"><canvas id="frameCanvas"></canvas></div></div><div class="filmstrip" id="filmstrip"></div></section>
+      <section class="stage-card" id="stageCard">
+        <div class="stage-top">
+          <div class="status"><span class="dot" id="statusDot"></span><span class="file-name" id="statusText">이미지를 붙여넣거나 파일을 선택해줘</span></div>
+          <div class="status" id="frameText">Frame - / -</div>
+        </div>
+        <div class="stage checker" id="stage">
+          <div class="drop-overlay">여기에 이미지를 놓으면 바로 로드돼</div>
+          <div class="empty" id="emptyState"><div class="empty-icon">🖼️</div><h2>스프라이트 시트를 붙여넣어줘</h2><p>이미지를 복사한 다음 이 페이지에서 <kbd>Ctrl</kbd> + <kbd>V</kbd>를 누르면 바로 재생됩니다.<br />파일을 끌어다 놓거나 이미지 선택 버튼을 써도 됩니다.</p></div>
+          <div class="preview-wrap" id="previewWrap"><canvas id="frameCanvas"></canvas></div>
+        </div>
+        <div class="filmstrip" id="filmstrip"></div>
+      </section>
+
       <aside class="side">
-        <section class="panel"><div class="panel-title">Playback</div><div class="control-grid"><div class="button-row"><button class="btn good" id="playBtn" disabled>재생</button><button class="btn secondary" id="stopBtn" disabled>정지</button></div><div class="button-row three"><button class="btn secondary" id="prevBtn" disabled>이전</button><button class="btn secondary" id="firstBtn" disabled>처음</button><button class="btn secondary" id="nextBtn" disabled>다음</button></div><div class="field scrubbable"><label for="intervalInput">프레임 간격</label><div class="scrub-zone" data-target="intervalInput" data-min="10" data-max="1000" data-step="5"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="intervalInput" type="number" min="10" max="1000" step="5" value="83" /></div><div class="field"><label for="modeSelect">재생 방식</label><select id="modeSelect"><option value="loop">Loop</option><option value="pingpong">Ping-Pong</option><option value="once">Once</option></select></div></div></section>
-        <section class="panel"><div class="panel-title">시트 설정</div><div class="control-grid"><div class="field scrubbable"><label for="colsInput">가로 시트</label><div class="scrub-zone" data-target="colsInput" data-min="1" data-max="64"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="colsInput" type="number" min="1" max="64" value="3" /></div><div class="field scrubbable"><label for="rowsInput">세로 시트</label><div class="scrub-zone" data-target="rowsInput" data-min="1" data-max="64"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="rowsInput" type="number" min="1" max="64" value="3" /></div><div class="field"><label>자동 프레임 수</label><div class="value-pill" id="autoFrameCount">9</div></div><button class="btn secondary" id="autoGridBtn" disabled>자동 추정</button></div></section>
-        <section class="panel"><div class="panel-title">Preview</div><div class="control-grid"><div><div class="range-row"><input id="scaleInput" type="range" min="1" max="10" value="3" step="1" /><span id="scaleValue">3x</span></div></div><div class="field"><label for="bgSelect">배경</label><select id="bgSelect"><option value="checker">Checker</option><option value="solid-dark">Dark</option><option value="solid-light">Light</option><option value="green">Green</option></select></div><button class="btn secondary" id="downloadFrameBtn" disabled>현재 프레임 PNG 저장</button></div></section>
-        <section class="panel"><div class="panel-title">Info</div><div class="info"><div class="info-row"><span>File</span><span id="infoFile">-</span></div><div class="info-row"><span>Sheet Size</span><span id="infoSheet">-</span></div><div class="info-row"><span>Frame Size</span><span id="infoFrame">-</span></div><div class="info-row"><span>Frame Count</span><span id="infoCells">-</span></div><div class="info-row"><span>Effective FPS</span><span id="infoFps">-</span></div></div></section>
-        <section class="panel"><div class="panel-title">Tip</div><div class="tip">프레임 수는 가로 시트 × 세로 시트로 자동 계산됩니다. 프레임 간격은 ms 단위라서 숫자가 작을수록 빠르게 재생되고, Shift를 누른 채 드래그하면 더 빠르게 조절됩니다.</div></section>
+        <section class="panel">
+          <div class="panel-title">Playback</div>
+          <div class="control-grid">
+            <div class="button-row"><button class="btn good" id="playBtn" disabled>재생</button><button class="btn secondary" id="stopBtn" disabled>정지</button></div>
+            <div class="button-row three"><button class="btn secondary" id="prevBtn" disabled>이전</button><button class="btn secondary" id="firstBtn" disabled>처음</button><button class="btn secondary" id="nextBtn" disabled>다음</button></div>
+            <div class="field scrubbable"><label for="intervalInput">프레임 간격</label><div class="scrub-zone" data-target="intervalInput" data-min="10" data-max="1000" data-step="5"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="intervalInput" type="number" min="10" max="1000" step="5" value="83" /></div>
+            <div class="field"><label for="modeSelect">재생 방식</label><select id="modeSelect"><option value="loop">Loop</option><option value="pingpong">Ping-Pong</option><option value="once">Once</option></select></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">시트 설정</div>
+          <div class="control-grid">
+            <div class="field scrubbable"><label for="colsInput">가로 시트</label><div class="scrub-zone" data-target="colsInput" data-min="1" data-max="64"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="colsInput" type="number" min="1" max="64" value="3" /></div>
+            <div class="field scrubbable"><label for="rowsInput">세로 시트</label><div class="scrub-zone" data-target="rowsInput" data-min="1" data-max="64"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="rowsInput" type="number" min="1" max="64" value="3" /></div>
+            <div class="field"><label>자동 프레임 수</label><div class="value-pill" id="autoFrameCount">9</div></div>
+            <button class="btn secondary" id="autoGridBtn" disabled>자동 추정</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Transform</div>
+          <div class="control-grid">
+            <div class="field scrubbable"><label for="offsetXInput">오프셋 X</label><div class="scrub-zone" data-target="offsetXInput" data-min="-512" data-max="512"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="offsetXInput" type="number" min="-512" max="512" value="0" /></div>
+            <div class="field scrubbable"><label for="offsetYInput">오프셋 Y</label><div class="scrub-zone" data-target="offsetYInput" data-min="-512" data-max="512"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="offsetYInput" type="number" min="-512" max="512" value="0" /></div>
+            <div class="field scrubbable"><label for="tiltInput">틸트</label><div class="scrub-zone" data-target="tiltInput" data-min="-180" data-max="180"><span class="scrub-fill"></span><span class="scrub-text">좌우 드래그</span></div><input id="tiltInput" type="number" min="-180" max="180" value="0" /></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Preview</div>
+          <div class="control-grid">
+            <div><div class="range-row"><input id="scaleInput" type="range" min="1" max="10" value="3" step="1" /><span id="scaleValue">3x</span></div></div>
+            <div class="field"><label for="bgSelect">배경</label><select id="bgSelect"><option value="checker">Checker</option><option value="solid-dark">Dark</option><option value="solid-light">Light</option><option value="green">Green</option></select></div>
+            <button class="btn secondary" id="downloadFrameBtn" disabled>현재 프레임 PNG 저장</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Info</div>
+          <div class="info">
+            <div class="info-row"><span>File</span><span id="infoFile">-</span></div>
+            <div class="info-row"><span>Sheet Size</span><span id="infoSheet">-</span></div>
+            <div class="info-row"><span>Frame Size</span><span id="infoFrame">-</span></div>
+            <div class="info-row"><span>Frame Count</span><span id="infoCells">-</span></div>
+            <div class="info-row"><span>Effective FPS</span><span id="infoFps">-</span></div>
+            <div class="info-row"><span>Offset</span><span id="infoOffset">-</span></div>
+            <div class="info-row"><span>Tilt</span><span id="infoTilt">-</span></div>
+          </div>
+        </section>
+
+        <section class="panel"><div class="panel-title">Tip</div><div class="tip">프레임 수는 가로 시트 × 세로 시트로 자동 계산됩니다. 오프셋 X/Y로 위치를 미세하게 맞출 수 있고, 틸트로 회전을 확인할 수 있어. 프레임 간격은 ms 단위이며 Shift를 누른 채 드래그하면 더 빠르게 조절됩니다.</div></section>
       </aside>
     </main>
-  </div><div class="toast" id="toast"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
   <script>
-    const $=id=>document.getElementById(id),els={stageCard:$('stageCard'),stage:$('stage'),emptyState:$('emptyState'),previewWrap:$('previewWrap'),frameCanvas:$('frameCanvas'),filmstrip:$('filmstrip'),statusDot:$('statusDot'),statusText:$('statusText'),frameText:$('frameText'),pickFileBtn:$('pickFileBtn'),pasteHelpBtn:$('pasteHelpBtn'),resetBtn:$('resetBtn'),fileInput:$('fileInput'),playBtn:$('playBtn'),stopBtn:$('stopBtn'),prevBtn:$('prevBtn'),nextBtn:$('nextBtn'),firstBtn:$('firstBtn'),intervalInput:$('intervalInput'),modeSelect:$('modeSelect'),colsInput:$('colsInput'),rowsInput:$('rowsInput'),autoFrameCount:$('autoFrameCount'),autoGridBtn:$('autoGridBtn'),scaleInput:$('scaleInput'),scaleValue:$('scaleValue'),bgSelect:$('bgSelect'),downloadFrameBtn:$('downloadFrameBtn'),infoFile:$('infoFile'),infoSheet:$('infoSheet'),infoFrame:$('infoFrame'),infoCells:$('infoCells'),infoFps:$('infoFps'),toast:$('toast')};
-    const ctx=els.frameCanvas.getContext('2d'),state={image:null,imageUrl:'',fileName:'',width:0,height:0,cols:3,rows:3,interval:83,scale:3,currentFrame:0,direction:1,playing:false,timer:null,mode:'loop'};
-    const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||min)),maxFrames=()=>Math.max(1,state.cols*state.rows),frameSize=()=>state.image?{w:state.width/state.cols,h:state.height/state.rows}:{w:0,h:0},round2=v=>Math.round(v*100)/100;
+    const $ = id => document.getElementById(id);
+    const els = {
+      stageCard:$('stageCard'),stage:$('stage'),emptyState:$('emptyState'),previewWrap:$('previewWrap'),frameCanvas:$('frameCanvas'),filmstrip:$('filmstrip'),statusDot:$('statusDot'),statusText:$('statusText'),frameText:$('frameText'),pickFileBtn:$('pickFileBtn'),pasteHelpBtn:$('pasteHelpBtn'),resetBtn:$('resetBtn'),fileInput:$('fileInput'),playBtn:$('playBtn'),stopBtn:$('stopBtn'),prevBtn:$('prevBtn'),nextBtn:$('nextBtn'),firstBtn:$('firstBtn'),intervalInput:$('intervalInput'),modeSelect:$('modeSelect'),colsInput:$('colsInput'),rowsInput:$('rowsInput'),autoFrameCount:$('autoFrameCount'),offsetXInput:$('offsetXInput'),offsetYInput:$('offsetYInput'),tiltInput:$('tiltInput'),autoGridBtn:$('autoGridBtn'),scaleInput:$('scaleInput'),scaleValue:$('scaleValue'),bgSelect:$('bgSelect'),downloadFrameBtn:$('downloadFrameBtn'),infoFile:$('infoFile'),infoSheet:$('infoSheet'),infoFrame:$('infoFrame'),infoCells:$('infoCells'),infoFps:$('infoFps'),infoOffset:$('infoOffset'),infoTilt:$('infoTilt'),toast:$('toast')
+    };
+
+    const ctx = els.frameCanvas.getContext('2d');
+    const state = {image:null,imageUrl:'',fileName:'',width:0,height:0,cols:3,rows:3,interval:83,scale:3,offsetX:0,offsetY:0,tilt:0,currentFrame:0,direction:1,playing:false,timer:null,mode:'loop'};
+    const clamp = (v,min,max) => { const n = Number(v); return Math.max(min, Math.min(max, Number.isFinite(n) ? n : min)); };
+    const maxFrames = () => Math.max(1,state.cols*state.rows);
+    const frameSize = () => state.image ? {w:state.width/state.cols,h:state.height/state.rows} : {w:0,h:0};
+    const round2 = v => Math.round(v*100)/100;
+
     function showToast(msg){els.toast.textContent=msg;els.toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>els.toast.classList.remove('show'),1800)}
     function setLoadedUi(loaded){els.emptyState.style.display=loaded?'none':'block';els.previewWrap.classList.toggle('active',loaded);els.statusDot.classList.toggle('ready',loaded);[els.playBtn,els.stopBtn,els.prevBtn,els.nextBtn,els.firstBtn,els.autoGridBtn,els.downloadFrameBtn].forEach(b=>b.disabled=!loaded)}
-    function updateInputsFromState(){els.colsInput.value=state.cols;els.rowsInput.value=state.rows;els.intervalInput.value=state.interval;els.scaleInput.value=state.scale;els.scaleValue.textContent=state.scale+'x';els.modeSelect.value=state.mode;els.autoFrameCount.textContent=maxFrames();updateScrubFills()}
-    function updateInfo(){const{w,h}=frameSize(),count=maxFrames();els.statusText.textContent=state.image?state.fileName:'이미지를 붙여넣거나 파일을 선택해줘';els.frameText.textContent=state.image?`Frame ${state.currentFrame+1} / ${count}`:'Frame - / -';els.infoFile.textContent=state.image?state.fileName:'-';els.infoSheet.textContent=state.image?`${state.width} × ${state.height}`:'-';els.infoFrame.textContent=state.image?`${round2(w)} × ${round2(h)}`:'-';els.infoCells.textContent=state.image?String(count):'-';els.infoFps.textContent=state.image?`${round2(1000/state.interval)} fps`:'-';els.autoFrameCount.textContent=count}
-    function renderFrame(){if(!state.image)return;const count=maxFrames();state.currentFrame=((state.currentFrame%count)+count)%count;const{w,h}=frameSize(),col=state.currentFrame%state.cols,row=Math.floor(state.currentFrame/state.cols);els.frameCanvas.width=Math.max(1,Math.round(w));els.frameCanvas.height=Math.max(1,Math.round(h));els.frameCanvas.style.width=`${Math.max(1,Math.round(w*state.scale))}px`;els.frameCanvas.style.height=`${Math.max(1,Math.round(h*state.scale))}px`;ctx.clearRect(0,0,els.frameCanvas.width,els.frameCanvas.height);ctx.imageSmoothingEnabled=false;ctx.drawImage(state.image,col*w,row*h,w,h,0,0,els.frameCanvas.width,els.frameCanvas.height);updateInfo();updateThumbActive();updateScrubFills()}
+    function updateInputsFromState(){els.colsInput.value=state.cols;els.rowsInput.value=state.rows;els.intervalInput.value=state.interval;els.scaleInput.value=state.scale;els.scaleValue.textContent=state.scale+'x';els.modeSelect.value=state.mode;els.offsetXInput.value=state.offsetX;els.offsetYInput.value=state.offsetY;els.tiltInput.value=state.tilt;els.autoFrameCount.textContent=maxFrames();updateScrubFills()}
+    function updateInfo(){const {w,h}=frameSize(),count=maxFrames();els.statusText.textContent=state.image?state.fileName:'이미지를 붙여넣거나 파일을 선택해줘';els.frameText.textContent=state.image?`Frame ${state.currentFrame+1} / ${count}`:'Frame - / -';els.infoFile.textContent=state.image?state.fileName:'-';els.infoSheet.textContent=state.image?`${state.width} × ${state.height}`:'-';els.infoFrame.textContent=state.image?`${round2(w)} × ${round2(h)}`:'-';els.infoCells.textContent=state.image?String(count):'-';els.infoFps.textContent=state.image?`${round2(1000/state.interval)} fps`:'-';els.infoOffset.textContent=state.image?`${state.offsetX}, ${state.offsetY}`:'-';els.infoTilt.textContent=state.image?`${state.tilt}°`:'-';els.autoFrameCount.textContent=count}
+
+    function renderFrame(){
+      if(!state.image)return;
+      const count=maxFrames();state.currentFrame=((state.currentFrame%count)+count)%count;
+      const {w,h}=frameSize();const col=state.currentFrame%state.cols;const row=Math.floor(state.currentFrame/state.cols);
+      const baseW=Math.max(1,Math.round(w));const baseH=Math.max(1,Math.round(h));const rad=state.tilt*Math.PI/180;const cos=Math.abs(Math.cos(rad));const sin=Math.abs(Math.sin(rad));
+      const rotatedW=baseW*cos+baseH*sin;const rotatedH=baseW*sin+baseH*cos;const padX=Math.abs(state.offsetX)+24;const padY=Math.abs(state.offsetY)+24;const canvasW=Math.ceil(rotatedW+padX*2);const canvasH=Math.ceil(rotatedH+padY*2);
+      els.frameCanvas.width=canvasW;els.frameCanvas.height=canvasH;els.frameCanvas.style.width=`${Math.max(1,Math.round(canvasW*state.scale))}px`;els.frameCanvas.style.height=`${Math.max(1,Math.round(canvasH*state.scale))}px`;
+      ctx.clearRect(0,0,canvasW,canvasH);ctx.imageSmoothingEnabled=false;ctx.save();ctx.translate(canvasW/2+state.offsetX,canvasH/2+state.offsetY);ctx.rotate(rad);ctx.drawImage(state.image,col*w,row*h,w,h,-baseW/2,-baseH/2,baseW,baseH);ctx.restore();
+      updateInfo();updateThumbActive();updateScrubFills();
+    }
+
     function buildFilmstrip(){els.filmstrip.innerHTML='';if(!state.image)return;const count=maxFrames(),{w,h}=frameSize(),maxThumbs=Math.min(count,128);for(let i=0;i<maxThumbs;i++){const col=i%state.cols,row=Math.floor(i/state.cols),c=document.createElement('canvas');c.width=96;c.height=96;const cctx=c.getContext('2d');cctx.imageSmoothingEnabled=false;const fit=Math.min(96/w,96/h),dw=Math.max(1,w*fit),dh=Math.max(1,h*fit),dx=(96-dw)/2,dy=(96-dh)/2;cctx.drawImage(state.image,col*w,row*h,w,h,dx,dy,dw,dh);const thumb=document.createElement('button');thumb.className='thumb';thumb.type='button';thumb.dataset.index=String(i);thumb.title=`Frame ${i+1}`;thumb.innerHTML=`<img alt="Frame ${i+1}" src="${c.toDataURL('image/png')}" /><span>${i+1}</span>`;thumb.addEventListener('click',()=>{state.currentFrame=i;pause();renderFrame()});els.filmstrip.appendChild(thumb)}if(count>maxThumbs){const more=document.createElement('div');more.className='thumb';more.style.display='grid';more.style.placeItems='center';more.style.color='var(--muted)';more.textContent=`+${count-maxThumbs}`;els.filmstrip.appendChild(more)}updateThumbActive()}
     function updateThumbActive(){els.filmstrip.querySelectorAll('.thumb[data-index]').forEach(t=>t.classList.toggle('active',Number(t.dataset.index)===state.currentFrame))}
     function stepFrame(){const count=maxFrames();if(count<=1)return;if(state.mode==='pingpong'){const next=state.currentFrame+state.direction;if(next>=count){state.direction=-1;state.currentFrame=Math.max(0,count-2)}else if(next<0){state.direction=1;state.currentFrame=Math.min(1,count-1)}else state.currentFrame=next}else if(state.mode==='once'){if(state.currentFrame>=count-1){pause();return}state.currentFrame++}else state.currentFrame=(state.currentFrame+1)%count;renderFrame()}
@@ -50,17 +145,19 @@
     function restartPlaybackIfNeeded(){if(state.playing)play()}
     function applySheetSettings({rebuild=true}={}){state.cols=clamp(els.colsInput.value,1,64);state.rows=clamp(els.rowsInput.value,1,64);state.currentFrame=Math.min(state.currentFrame,maxFrames()-1);updateInputsFromState();renderFrame();if(rebuild)buildFilmstrip()}
     function applyPlaybackSettings(){state.interval=clamp(els.intervalInput.value,10,1000);state.mode=els.modeSelect.value;updateInputsFromState();updateInfo();restartPlaybackIfNeeded()}
+    function applyTransformSettings(){state.offsetX=clamp(els.offsetXInput.value,-512,512);state.offsetY=clamp(els.offsetYInput.value,-512,512);state.tilt=clamp(els.tiltInput.value,-180,180);updateInputsFromState();renderFrame()}
     function applyScale(){state.scale=clamp(els.scaleInput.value,1,10);updateInputsFromState();renderFrame()}
     function applyBackground(){els.stage.classList.remove('checker','solid-dark','solid-light','green');els.stage.classList.add(els.bgSelect.value)}
-    function resetSettings(){pause();Object.assign(state,{cols:3,rows:3,interval:83,scale:3,currentFrame:0,direction:1,mode:'loop'});updateInputsFromState();applyBackground();if(state.image){renderFrame();buildFilmstrip()}showToast('세팅을 초기화했어')}
+    function resetSettings(){pause();Object.assign(state,{cols:3,rows:3,interval:83,scale:3,offsetX:0,offsetY:0,tilt:0,currentFrame:0,direction:1,mode:'loop'});updateInputsFromState();applyBackground();if(state.image){renderFrame();buildFilmstrip()}showToast('세팅을 초기화했어')}
     function autoGuessGrid(){if(!state.image)return;const cand=[[3,3],[4,4],[5,5],[6,6],[8,8],[4,2],[5,2],[6,2],[8,2],[4,3],[5,3],[6,3],[8,4]];let best=cand[0],score=Infinity;for(const[cols,rows]of cand){if(state.width%cols||state.height%rows)continue;const fw=state.width/cols,fh=state.height/rows,s=Math.abs(fw-fh)+Math.abs(cols*rows-16)*2;if(s<score){score=s;best=[cols,rows]}}state.cols=best[0];state.rows=best[1];state.currentFrame=0;updateInputsFromState();renderFrame();buildFilmstrip();showToast(`${state.cols} × ${state.rows}로 추정했어`)}
     function loadFile(file){if(!file||!file.type.startsWith('image/')){showToast('이미지 파일만 불러올 수 있어');return}pause();if(state.imageUrl)URL.revokeObjectURL(state.imageUrl);const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{state.image=img;state.imageUrl=url;state.fileName=file.name||'Pasted Image';state.width=img.naturalWidth;state.height=img.naturalHeight;state.currentFrame=0;state.direction=1;updateInputsFromState();setLoadedUi(true);renderFrame();buildFilmstrip();play();showToast('이미지 로드 완료')};img.onerror=()=>{URL.revokeObjectURL(url);showToast('이미지를 읽지 못했어')};img.src=url}
     function downloadCurrentFrame(){if(!state.image)return;const a=document.createElement('a');a.download=`sprite-frame-${String(state.currentFrame+1).padStart(3,'0')}.png`;a.href=els.frameCanvas.toDataURL('image/png');a.click()}
     function handlePaste(e){const items=e.clipboardData?.items||[];for(const item of items){if(item.type.startsWith('image/')){const file=item.getAsFile();if(file){e.preventDefault();loadFile(file);return}}}}
     function updateScrubFills(){document.querySelectorAll('.scrub-zone').forEach(zone=>{const input=$(zone.dataset.target);if(!input)return;const min=Number(zone.dataset.min??input.min??1),max=Number(zone.dataset.max??input.max??100),v=clamp(input.value,min,max),pct=max===min?100:((v-min)/(max-min))*100,fill=zone.querySelector('.scrub-fill');if(fill)fill.style.width=Math.max(0,Math.min(100,pct))+'%'})}
-    function applyInputById(id,{rebuild=true}={}){if(id==='colsInput'||id==='rowsInput')applySheetSettings({rebuild});else if(id==='intervalInput')applyPlaybackSettings()}
+    function applyInputById(id,{rebuild=true}={}){if(id==='colsInput'||id==='rowsInput')applySheetSettings({rebuild});else if(id==='intervalInput')applyPlaybackSettings();else if(id==='offsetXInput'||id==='offsetYInput'||id==='tiltInput')applyTransformSettings()}
     function setupScrubZones(){document.querySelectorAll('.scrub-zone').forEach(zone=>{zone.addEventListener('pointerdown',e=>{const input=$(zone.dataset.target);if(!input)return;e.preventDefault();zone.setPointerCapture(e.pointerId);zone.classList.add('dragging');document.body.classList.add('scrubbing');const min=Number(zone.dataset.min??input.min??1),max=Number(zone.dataset.max??input.max??100),step=Number(zone.dataset.step??1),startX=e.clientX,startVal=Number(input.value)||min;let lastVal=startVal;const move=ev=>{const speed=ev.shiftKey?4:1,raw=startVal+Math.round((ev.clientX-startX)/10*speed)*step,next=clamp(raw,min,max);if(next!==lastVal){lastVal=next;input.value=next;applyInputById(zone.dataset.target,{rebuild:false})}};const up=()=>{zone.classList.remove('dragging');document.body.classList.remove('scrubbing');applyInputById(zone.dataset.target,{rebuild:true});zone.removeEventListener('pointermove',move);zone.removeEventListener('pointerup',up);zone.removeEventListener('pointercancel',up)};zone.addEventListener('pointermove',move);zone.addEventListener('pointerup',up);zone.addEventListener('pointercancel',up)})});updateScrubFills()}
-    els.pickFileBtn.addEventListener('click',()=>els.fileInput.click());els.fileInput.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)loadFile(f);e.target.value=''});els.pasteHelpBtn.addEventListener('click',()=>showToast('이미지를 복사한 뒤 이 페이지에서 Ctrl + V를 눌러줘'));els.resetBtn.addEventListener('click',resetSettings);els.playBtn.addEventListener('click',play);els.stopBtn.addEventListener('click',pause);els.prevBtn.addEventListener('click',()=>{pause();state.currentFrame=(state.currentFrame-1+maxFrames())%maxFrames();renderFrame()});els.nextBtn.addEventListener('click',()=>{pause();state.currentFrame=(state.currentFrame+1)%maxFrames();renderFrame()});els.firstBtn.addEventListener('click',()=>{pause();state.currentFrame=0;state.direction=1;renderFrame()});[els.colsInput,els.rowsInput].forEach(i=>{i.addEventListener('change',()=>applySheetSettings({rebuild:true}));i.addEventListener('input',()=>applySheetSettings({rebuild:false}))});els.intervalInput.addEventListener('change',applyPlaybackSettings);els.intervalInput.addEventListener('input',applyPlaybackSettings);els.modeSelect.addEventListener('change',applyPlaybackSettings);els.scaleInput.addEventListener('input',applyScale);els.bgSelect.addEventListener('change',applyBackground);els.autoGridBtn.addEventListener('click',autoGuessGrid);els.downloadFrameBtn.addEventListener('click',downloadCurrentFrame);window.addEventListener('paste',handlePaste);['dragenter','dragover'].forEach(n=>window.addEventListener(n,e=>{e.preventDefault();els.stageCard.classList.add('is-dragging')}));['dragleave','drop'].forEach(n=>window.addEventListener(n,e=>{e.preventDefault();if(n==='drop'){const f=e.dataTransfer?.files?.[0];if(f)loadFile(f)}els.stageCard.classList.remove('is-dragging')}));window.addEventListener('keydown',e=>{if(!state.image)return;if(e.target&&['INPUT','SELECT'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing?pause():play()}if(e.code==='ArrowLeft'){e.preventDefault();els.prevBtn.click()}if(e.code==='ArrowRight'){e.preventDefault();els.nextBtn.click()}});
+
+    els.pickFileBtn.addEventListener('click',()=>els.fileInput.click());els.fileInput.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)loadFile(f);e.target.value=''});els.pasteHelpBtn.addEventListener('click',()=>showToast('이미지를 복사한 뒤 이 페이지에서 Ctrl + V를 눌러줘'));els.resetBtn.addEventListener('click',resetSettings);els.playBtn.addEventListener('click',play);els.stopBtn.addEventListener('click',pause);els.prevBtn.addEventListener('click',()=>{pause();state.currentFrame=(state.currentFrame-1+maxFrames())%maxFrames();renderFrame()});els.nextBtn.addEventListener('click',()=>{pause();state.currentFrame=(state.currentFrame+1)%maxFrames();renderFrame()});els.firstBtn.addEventListener('click',()=>{pause();state.currentFrame=0;state.direction=1;renderFrame()});[els.colsInput,els.rowsInput].forEach(i=>{i.addEventListener('change',()=>applySheetSettings({rebuild:true}));i.addEventListener('input',()=>applySheetSettings({rebuild:false}))});els.intervalInput.addEventListener('change',applyPlaybackSettings);els.intervalInput.addEventListener('input',applyPlaybackSettings);[els.offsetXInput,els.offsetYInput,els.tiltInput].forEach(i=>{i.addEventListener('change',applyTransformSettings);i.addEventListener('input',applyTransformSettings)});els.modeSelect.addEventListener('change',applyPlaybackSettings);els.scaleInput.addEventListener('input',applyScale);els.bgSelect.addEventListener('change',applyBackground);els.autoGridBtn.addEventListener('click',autoGuessGrid);els.downloadFrameBtn.addEventListener('click',downloadCurrentFrame);window.addEventListener('paste',handlePaste);['dragenter','dragover'].forEach(n=>window.addEventListener(n,e=>{e.preventDefault();els.stageCard.classList.add('is-dragging')}));['dragleave','drop'].forEach(n=>window.addEventListener(n,e=>{e.preventDefault();if(n==='drop'){const f=e.dataTransfer?.files?.[0];if(f)loadFile(f)}els.stageCard.classList.remove('is-dragging')}));window.addEventListener('keydown',e=>{if(!state.image)return;if(e.target&&['INPUT','SELECT'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing?pause():play()}if(e.code==='ArrowLeft'){e.preventDefault();els.prevBtn.click()}if(e.code==='ArrowRight'){e.preventDefault();els.nextBtn.click()}});
     setLoadedUi(false);updateInputsFromState();updateInfo();applyBackground();setupScrubZones();
   </script>
 </body>
