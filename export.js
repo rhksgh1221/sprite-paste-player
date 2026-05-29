@@ -1,2 +1,14 @@
 export function saveCanvasPNG(canvas,filename){const a=document.createElement('a');a.download=filename;a.href=canvas.toDataURL('image/png');a.click()}
-export async function saveAllFramesZip(){alert('전체 프레임 ZIP 저장은 다음 단계에서 연결할게. 현재 구조는 export.js로 분리 완료됐어.')}
+
+const te=new TextEncoder();
+let CRC_TABLE=null;
+function crcTable(){if(CRC_TABLE)return CRC_TABLE;CRC_TABLE=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);CRC_TABLE[n]=c>>>0}return CRC_TABLE}
+function crc32(data){const t=crcTable();let c=0xffffffff;for(let i=0;i<data.length;i++)c=t[(c^data[i])&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function dosDateTime(date=new Date()){let y=date.getFullYear();if(y<1980)y=1980;return{time:((date.getHours()&31)<<11)|((date.getMinutes()&63)<<5)|((date.getSeconds()/2)&31),date:(((y-1980)&127)<<9)|(((date.getMonth()+1)&15)<<5)|(date.getDate()&31)}}
+function u16(arr,v){arr.push(v&255,(v>>>8)&255)}
+function u32(arr,v){arr.push(v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255)}
+function bytes(arr){return new Uint8Array(arr)}
+function concat(parts,total){const out=new Uint8Array(total);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
+async function canvasBytes(canvas){const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));return new Uint8Array(await blob.arrayBuffer())}
+function buildZip(files){const parts=[],central=[];let offset=0;const dt=dosDateTime();for(const f of files){const name=te.encode(f.name),data=f.data,crc=crc32(data),local=[];u32(local,0x04034b50);u16(local,20);u16(local,0x0800);u16(local,0);u16(local,dt.time);u16(local,dt.date);u32(local,crc);u32(local,data.length);u32(local,data.length);u16(local,name.length);u16(local,0);const lh=bytes(local);parts.push(lh,name,data);const cent=[];u32(cent,0x02014b50);u16(cent,20);u16(cent,20);u16(cent,0x0800);u16(cent,0);u16(cent,dt.time);u16(cent,dt.date);u32(cent,crc);u32(cent,data.length);u32(cent,data.length);u16(cent,name.length);u16(cent,0);u16(cent,0);u16(cent,0);u16(cent,0);u32(cent,0);u32(cent,offset);central.push(bytes(cent),name);offset+=lh.length+name.length+data.length}const centralSize=central.reduce((s,p)=>s+p.length,0),centralOffset=offset,end=[];u32(end,0x06054b50);u16(end,0);u16(end,0);u16(end,files.length);u16(end,files.length);u32(end,centralSize);u32(end,centralOffset);u16(end,0);const all=[...parts,...central,bytes(end)],total=all.reduce((s,p)=>s+p.length,0);return concat(all,total)}
+export async function saveFramesZip({frameCount,renderFrame,filename='sprite-frames.zip',prefix='frame',onProgress=null}){const files=[];for(let i=0;i<frameCount;i++){const canvas=renderFrame(i);const data=await canvasBytes(canvas);files.push({name:`${prefix}-${String(i+1).padStart(3,'0')}.png`,data});if(onProgress)onProgress(i+1,frameCount)}const zip=buildZip(files);const blob=new Blob([zip],{type:'application/zip'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.download=filename;a.href=url;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)}
