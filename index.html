@@ -12,7 +12,7 @@
   <div>
     <div class="badge">⚡ Clipboard Sprite Preview</div>
     <h1>Sprite Paste Player</h1>
-    <p>이미지를 복사해서 바로 붙여넣고, 시트 분할·오프셋·틸트·재생 커브·VFX 필터를 빠르게 확인하는 미니 툴.</p>
+    <p>왼쪽은 GIF/프레임 루프 프리뷰, 오른쪽은 고정 격자 스프라이트 시트 프리뷰. GIF 분해·프레임 삭제·균등 샘플링·셀 안 텍스쳐 이동·RGBA/알파 확인까지 한 번에 보는 미니 툴.</p>
   </div>
   <div class="actions">
     <button class="btn" id="pick">이미지 선택</button>
@@ -20,28 +20,112 @@
     <button class="btn secondary" id="undo" disabled>되돌리기</button>
     <button class="btn secondary" id="redo" disabled>다시 실행</button>
     <button class="btn secondary" id="reset">초기화</button>
-    <input class="hidden" id="file" type="file" accept="image/*">
+    <input class="hidden" id="file" type="file" accept="image/*,.gif">
   </div>
 </header>
+
 <main class="layout">
 <section class="stageCard card glass" id="card">
   <div class="top"><div id="status">이미지를 붙여넣거나 파일을 선택해줘</div><div id="frameTxt">Frame - / -</div></div>
   <div class="stage" id="stage" tabindex="0">
     <div class="drop">이미지를 여기에 놓으면 바로 로드돼</div>
-    <div class="empty" id="empty"><div class="icon">🖼️</div><b>스프라이트 시트를 붙여넣어줘</b><span>Ctrl+V / 클립보드 읽기 / 드래그 앤 드롭 / 파일 선택 지원</span></div>
+    <div class="empty" id="empty"><div class="icon">🖼️</div><b>스프라이트 시트나 GIF를 붙여넣어줘</b><span>Ctrl+V / 클립보드 읽기 / 드래그 앤 드롭 / 파일 선택 지원</span></div>
     <div class="preview" id="preview"><canvas id="canvas"></canvas></div>
   </div>
   <div class="film" id="film"></div>
 </section>
+
 <aside class="side glass">
   <div class="quick"><button class="btn secondary hidden" id="qAuto" disabled>스마트 자동추정</button><button class="btn good" id="qPlay" disabled>재생</button><button class="btn secondary" id="qSave" disabled>PNG 저장</button><button class="btn secondary" id="qZip" disabled>ZIP 저장</button><button class="btn secondary" id="qPreset">프리셋 순환</button></div>
   <div class="tabs"><button class="tabBtn active" data-tab="playback">재생</button><button class="tabBtn" data-tab="sheet">시트</button><button class="tabBtn" data-tab="transform">변형</button><button class="tabBtn" data-tab="filter">필터</button><button class="tabBtn" data-tab="info">정보</button></div>
   <div class="tabWrap">
-    <div class="tabPanel active" data-panel="playback"><section class="panel"><div class="title">Playback <span class="mini">interval + curve</span></div><div class="grid"><div class="btns"><button class="btn good" id="play" disabled>재생</button><button class="btn secondary" id="stop" disabled>정지</button></div><div class="btns three"><button class="btn secondary" id="prev" disabled>이전</button><button class="btn secondary" id="first" disabled>처음</button><button class="btn secondary" id="next" disabled>다음</button></div><div class="row"><label>간격</label><div class="scrub" data-target="interval" data-min="10" data-max="100"><i class="fill"></i><span>드래그</span></div><input id="interval" type="number" min="10" max="100" value="83"></div><div class="row simple"><label>속도 커브</label><select id="curve"><option value="linear">Linear</option><option value="easeIn">Ease In</option><option value="easeOut">Ease Out</option><option value="easeInOut">Ease In-Out</option><option value="burst">Burst</option></select></div><div class="row"><label>커브값</label><div class="scrub" data-target="curveVal" data-min="0" data-max="100"><i class="fill"></i><span>드래그</span></div><input id="curveVal" type="number" min="0" max="100" value="50"></div><div class="row simple"><label>재생 방식</label><select id="mode"><option value="loop">Loop</option><option value="pingpong">Ping-Pong</option><option value="once">Once</option></select></div></div></section></div>
-    <div class="tabPanel" data-panel="sheet"><section class="panel"><div class="title">Sheet <span class="mini">auto on input</span></div><div class="grid"><div class="row"><label>가로</label><div class="scrub" data-target="cols" data-min="1" data-max="12"><i class="fill"></i><span>드래그</span></div><input id="cols" type="number" min="1" max="12" value="3"></div><div class="row"><label>세로</label><div class="scrub" data-target="rows" data-min="1" data-max="12"><i class="fill"></i><span>드래그</span></div><input id="rows" type="number" min="1" max="12" value="3"></div><div class="row simple"><label>프레임 수</label><div class="pill hot" id="count">9</div></div><button class="btn secondary hidden" id="auto" disabled>스마트 자동 추정</button></div></section><section class="panel"><div class="title">Preview / Export</div><div class="grid"><div class="row simple"><label>확대</label><div class="range"><input id="scale" type="range" min="1" max="10" value="3"><span class="pill" id="scaleTxt">3x</span></div></div><div class="row simple"><label>배경</label><select id="bg"><option value="checker">Checker</option><option value="dark">Dark</option><option value="light">Light</option><option value="green">Green</option></select></div><div class="btns"><button class="btn secondary" id="save" disabled>현재 프레임 PNG</button><button class="btn secondary" id="zip" disabled>전체 프레임 ZIP</button></div></div></section></div>
-    <div class="tabPanel" data-panel="transform"><section class="panel"><div class="title">Transform <span class="mini">offset ±128</span></div><div class="grid"><div class="row"><label>Offset X</label><div class="scrub" data-target="ox" data-min="-128" data-max="128"><i class="fill"></i><span>드래그</span></div><input id="ox" type="number" min="-128" max="128" value="0"></div><div class="row"><label>Offset Y</label><div class="scrub" data-target="oy" data-min="-128" data-max="128"><i class="fill"></i><span>드래그</span></div><input id="oy" type="number" min="-128" max="128" value="0"></div><div class="row"><label>틸트</label><div class="scrub" data-target="tilt" data-min="-180" data-max="180"><i class="fill"></i><span>드래그</span></div><input id="tilt" type="number" min="-180" max="180" value="0"></div></div></section></div>
-    <div class="tabPanel" data-panel="filter"><section class="panel"><div class="title">Stylize <span class="mini">game sprite</span></div><div class="grid"><div class="btns"><label class="toggle"><input id="fEnable" type="checkbox">필터 활성화</label><label class="toggle"><input id="fBypass" type="checkbox">Before 보기</label></div></div></section><section class="panel"><div class="title">색 보정 <span class="mini">color</span></div><div class="grid"><div class="frow"><label>밝기</label><div class="range"><input id="fBright" type="range" min="-100" max="100" value="0"><span class="pill" id="fBrightTxt">0</span></div></div><div class="frow"><label>대비</label><div class="range"><input id="fContrast" type="range" min="-100" max="100" value="0"><span class="pill" id="fContrastTxt">0</span></div></div><div class="frow"><label>채도</label><div class="range"><input id="fSat" type="range" min="-100" max="100" value="0"><span class="pill" id="fSatTxt">0</span></div></div><div class="frow"><label>색조</label><div class="range"><input id="fHue" type="range" min="-180" max="180" value="0"><span class="pill" id="fHueTxt">0</span></div></div></div></section><section class="panel"><div class="title">스타일 <span class="mini">toggle</span></div><div class="grid"><div class="frow"><label class="toggle"><input id="fCel" type="checkbox">셀 셰이드</label><div class="range"><input id="fCelSteps" type="range" min="2" max="8" value="4"><span class="pill" id="fCelStepsTxt">4</span></div></div><div class="frow"><label class="toggle"><input id="fPixel" type="checkbox">픽셀화</label><div class="range"><input id="fPixelSize" type="range" min="1" max="16" value="4"><span class="pill" id="fPixelSizeTxt">4</span></div></div><div class="frow"><label class="toggle"><input id="fOutline" type="checkbox">아웃라인</label><div class="ctl"><input id="fOutlineWidth" type="range" min="1" max="4" value="1"><input id="fOutlineColor" type="color" value="#0a0a12"></div></div><div class="frow"><label class="toggle"><input id="fAlpha" type="checkbox">알파 정리</label><div class="range"><input id="fAlphaTh" type="range" min="0" max="100" value="50"><span class="pill" id="fAlphaThTxt">50</span></div></div></div></section><section class="panel"><div class="title">리컬러 <span class="mini">gradient map</span></div><div class="grid"><div class="frow"><label class="toggle"><input id="fRamp" type="checkbox">리컬러 켜기</label><select id="fRampPreset"><option value="fire">Fire</option><option value="ice">Ice</option><option value="toxic">Toxic</option><option value="mono">Mono</option><option value="custom">Custom</option></select></div><div class="frow"><label>강도</label><div class="range"><input id="fRampMix" type="range" min="0" max="100" value="100"><span class="pill" id="fRampMixTxt">100</span></div></div><div class="swatches" id="rampSwatches"></div><div class="swatches"><input id="fRampColor0" type="color" value="#12020a"><input id="fRampColor1" type="color" value="#8b1026"><input id="fRampColor2" type="color" value="#ff6a00"><input id="fRampColor3" type="color" value="#ffd166"></div></div></section><section class="panel"><div class="grid"><div class="btns"><button class="btn secondary" id="fReset">필터 초기화</button><button class="btn secondary" id="fPreset">프리셋 순환</button></div></div></section></div>
-    <div class="tabPanel" data-panel="info"><section class="panel"><div class="title">Info <span class="mini">summary chips</span></div><div class="chips"><div class="chip"><b>File</b><span id="iFile">-</span></div><div class="chip"><b>Sheet</b><span id="iSheet">-</span></div><div class="chip"><b>Frame</b><span id="iFrame">-</span></div><div class="chip"><b>Count</b><span id="iCount">-</span></div><div class="chip"><b>FPS</b><span id="iFps">-</span></div><div class="chip"><b>Curve</b><span id="iCurve">-</span></div><div class="chip"><b>Offset</b><span id="iOffset">-</span></div><div class="chip"><b>Tilt</b><span id="iTilt">-</span></div></div></section><section class="panel"><div class="title">Tip</div><div class="tip">필터 탭은 게임 스프라이트용 스타일화 도구야 — 색 보정 · 셀 셰이드(툰) · 픽셀화 · 아웃라인 · 알파 정리 · 리컬러(그라데이션 맵). 맨 위 '필터 활성화'로 전체를 켜고 꺼.</div></section></div>
+
+    <div class="tabPanel active" data-panel="playback">
+      <section class="panel"><div class="title">Playback <span class="mini">left loop preview</span></div><div class="grid">
+        <div class="btns"><button class="btn good" id="play" disabled>재생</button><button class="btn secondary" id="stop" disabled>정지</button></div>
+        <div class="btns three"><button class="btn secondary" id="prev" disabled>이전</button><button class="btn secondary" id="first" disabled>처음</button><button class="btn secondary" id="next" disabled>다음</button></div>
+        <div class="row"><label>간격</label><div class="scrub" data-target="interval" data-min="10" data-max="100"><i class="fill"></i><span>드래그</span></div><input id="interval" type="number" min="10" max="100" value="83"></div>
+        <div class="row simple"><label>속도 커브</label><select id="curve"><option value="linear">Linear</option><option value="easeIn">Ease In</option><option value="easeOut">Ease Out</option><option value="easeInOut">Ease In-Out</option><option value="burst">Burst</option></select></div>
+        <div class="row"><label>커브값</label><div class="scrub" data-target="curveVal" data-min="0" data-max="100"><i class="fill"></i><span>드래그</span></div><input id="curveVal" type="number" min="0" max="100" value="50"></div>
+        <div class="row simple"><label>재생 방식</label><select id="mode"><option value="loop">Loop</option><option value="pingpong">Ping-Pong</option><option value="once">Once</option></select></div>
+      </div></section>
+    </div>
+
+    <div class="tabPanel" data-panel="sheet">
+      <section class="panel"><div class="title">Sheet Grid <span class="mini">right sprite preview</span></div><div class="grid">
+        <div class="row"><label>가로</label><div class="scrub" data-target="cols" data-min="1" data-max="12"><i class="fill"></i><span>드래그</span></div><input id="cols" type="number" min="1" max="12" value="3"></div>
+        <div class="row"><label>세로</label><div class="scrub" data-target="rows" data-min="1" data-max="12"><i class="fill"></i><span>드래그</span></div><input id="rows" type="number" min="1" max="12" value="3"></div>
+        <div class="row simple"><label>소스 프레임</label><div class="pill hot" id="count">9</div></div>
+        <button class="btn secondary hidden" id="auto" disabled>스마트 자동 추정</button>
+        <div class="btns"><button class="btn secondary" id="delFrame" disabled>현재 프레임 삭제</button><button class="btn secondary" id="sheetSave" disabled>시트 PNG 저장</button></div>
+        <div class="tip">20프레임 GIF를 3×3으로 만들면 앞 9장을 자르는 게 아니라 전체 길이에서 9장을 균등 샘플링해서 넣어.</div>
+      </div></section>
+
+      <section class="panel"><div class="title">Generated Sheet Preview <span class="mini">RGBA / R / G / B / A</span></div><div class="grid">
+        <div class="row simple"><label>채널 보기</label><select id="sheetChannel"><option value="rgba">RGBA</option><option value="r">R</option><option value="g">G</option><option value="b">B</option><option value="a">A</option></select></div>
+        <button class="btn secondary" id="sheetPreview" disabled>생성 시트 프리뷰 갱신</button>
+        <div class="sheetPreviewBox">
+          <canvas id="sheetPreviewCanvas"></canvas>
+          <div id="sheetInfo" class="sheetInfo">시트 프리뷰 없음</div>
+        </div>
+      </div></section>
+
+      <section class="panel"><div class="title">Preview / Export</div><div class="grid">
+        <div class="row simple"><label>확대</label><div class="range"><input id="scale" type="range" min="1" max="10" value="3"><span class="pill" id="scaleTxt">3x</span></div></div>
+        <div class="row simple"><label>배경</label><select id="bg"><option value="checker">Checker</option><option value="dark">Dark</option><option value="light">Light</option><option value="green">Green</option></select></div>
+        <div class="btns"><button class="btn secondary" id="save" disabled>현재 프레임 PNG</button><button class="btn secondary" id="zip" disabled>전체 프레임 ZIP</button></div>
+      </div></section>
+    </div>
+
+    <div class="tabPanel" data-panel="transform">
+      <section class="panel"><div class="title">Transform <span class="mini">loop preview output</span></div><div class="grid">
+        <div class="row"><label>Offset X</label><div class="scrub" data-target="ox" data-min="-128" data-max="128"><i class="fill"></i><span>드래그</span></div><input id="ox" type="number" min="-128" max="128" value="0"></div>
+        <div class="row"><label>Offset Y</label><div class="scrub" data-target="oy" data-min="-128" data-max="128"><i class="fill"></i><span>드래그</span></div><input id="oy" type="number" min="-128" max="128" value="0"></div>
+        <div class="row"><label>틸트</label><div class="scrub" data-target="tilt" data-min="-180" data-max="180"><i class="fill"></i><span>드래그</span></div><input id="tilt" type="number" min="-180" max="180" value="0"></div>
+      </div></section>
+      <section class="panel"><div class="title">Cell Focus <span class="mini">fixed grid texture move</span></div><div class="grid">
+        <div class="row"><label>텍스쳐 X</label><div class="scrub" data-target="focusX" data-min="-512" data-max="512"><i class="fill"></i><span>드래그</span></div><input id="focusX" type="number" min="-512" max="512" value="0"></div>
+        <div class="row"><label>텍스쳐 Y</label><div class="scrub" data-target="focusY" data-min="-512" data-max="512"><i class="fill"></i><span>드래그</span></div><input id="focusY" type="number" min="-512" max="512" value="0"></div>
+        <button class="btn secondary" id="focusReset">텍스쳐 위치 초기화</button>
+        <div class="tip">셀 크기는 고정하고, 셀 안에서 텍스쳐 이미지만 이동해. 양수 X/Y는 이미지가 오른쪽/아래로 이동해.</div>
+      </div></section>
+    </div>
+
+    <div class="tabPanel" data-panel="filter">
+      <section class="panel"><div class="title">Stylize <span class="mini">game sprite</span></div><div class="grid"><div class="btns"><label class="toggle"><input id="fEnable" type="checkbox">필터 활성화</label><label class="toggle"><input id="fBypass" type="checkbox">Before 보기</label></div></div></section>
+      <section class="panel"><div class="title">색 보정 <span class="mini">color</span></div><div class="grid">
+        <div class="frow"><label>밝기</label><div class="range"><input id="fBright" type="range" min="-100" max="100" value="0"><span class="pill" id="fBrightTxt">0</span></div></div>
+        <div class="frow"><label>대비</label><div class="range"><input id="fContrast" type="range" min="-100" max="100" value="0"><span class="pill" id="fContrastTxt">0</span></div></div>
+        <div class="frow"><label>채도</label><div class="range"><input id="fSat" type="range" min="-100" max="100" value="0"><span class="pill" id="fSatTxt">0</span></div></div>
+        <div class="frow"><label>색조</label><div class="range"><input id="fHue" type="range" min="-180" max="180" value="0"><span class="pill" id="fHueTxt">0</span></div></div>
+      </div></section>
+      <section class="panel"><div class="title">스타일 <span class="mini">toggle</span></div><div class="grid">
+        <div class="frow"><label class="toggle"><input id="fCel" type="checkbox">셀 셰이드</label><div class="range"><input id="fCelSteps" type="range" min="2" max="8" value="4"><span class="pill" id="fCelStepsTxt">4</span></div></div>
+        <div class="frow"><label class="toggle"><input id="fPixel" type="checkbox">픽셀화</label><div class="range"><input id="fPixelSize" type="range" min="1" max="16" value="4"><span class="pill" id="fPixelSizeTxt">4</span></div></div>
+        <div class="frow"><label class="toggle"><input id="fOutline" type="checkbox">아웃라인</label><div class="ctl"><input id="fOutlineWidth" type="range" min="1" max="4" value="1"><input id="fOutlineColor" type="color" value="#0a0a12"></div></div>
+      </div></section>
+      <section class="panel"><div class="title">Alpha <span class="mini">value + auto generation</span></div><div class="grid">
+        <div class="frow"><label>알파값</label><div class="range"><input id="fAlphaValue" type="range" min="0" max="200" value="100"><span class="pill" id="fAlphaValueTxt">100</span></div></div>
+        <div class="frow"><label class="toggle"><input id="fAlphaGen" type="checkbox">자동 알파 생성</label><select id="fAlphaMode"><option value="max">Max RGB</option><option value="luma">Luma</option><option value="inverse">Invert Luma</option><option value="min">Min RGB</option></select></div>
+        <div class="frow"><label class="toggle"><input id="fAlpha" type="checkbox">알파 컷</label><div class="range"><input id="fAlphaTh" type="range" min="0" max="100" value="50"><span class="pill" id="fAlphaThTxt">50</span></div></div>
+        <div class="tip">자동 알파 생성은 검은 배경 VFX 텍스쳐에서 밝기를 알파로 바꿔 투명도를 만들어줘. Max RGB가 기본 추천값이야.</div>
+      </div></section>
+      <section class="panel"><div class="title">리컬러 <span class="mini">gradient map</span></div><div class="grid">
+        <div class="frow"><label class="toggle"><input id="fRamp" type="checkbox">리컬러 켜기</label><select id="fRampPreset"><option value="fire">Fire</option><option value="ice">Ice</option><option value="toxic">Toxic</option><option value="mono">Mono</option><option value="custom">Custom</option></select></div>
+        <div class="frow"><label>강도</label><div class="range"><input id="fRampMix" type="range" min="0" max="100" value="100"><span class="pill" id="fRampMixTxt">100</span></div></div>
+        <div class="swatches" id="rampSwatches"></div>
+        <div class="swatches"><input id="fRampColor0" type="color" value="#12020a"><input id="fRampColor1" type="color" value="#8b1026"><input id="fRampColor2" type="color" value="#ff6a00"><input id="fRampColor3" type="color" value="#ffd166"></div>
+      </div></section>
+      <section class="panel"><div class="grid"><div class="btns"><button class="btn secondary" id="fReset">필터 초기화</button><button class="btn secondary" id="fPreset">프리셋 순환</button></div></div></section>
+    </div>
+
+    <div class="tabPanel" data-panel="info">
+      <section class="panel"><div class="title">Info <span class="mini">summary chips</span></div><div class="chips">
+        <div class="chip"><b>File</b><span id="iFile">-</span></div><div class="chip"><b>Sheet</b><span id="iSheet">-</span></div><div class="chip"><b>Frame</b><span id="iFrame">-</span></div><div class="chip"><b>Count</b><span id="iCount">-</span></div><div class="chip"><b>FPS</b><span id="iFps">-</span></div><div class="chip"><b>Curve</b><span id="iCurve">-</span></div><div class="chip"><b>Offset</b><span id="iOffset">-</span></div><div class="chip"><b>Tilt</b><span id="iTilt">-</span></div>
+      </div></section>
+      <section class="panel"><div class="title">Tip</div><div class="tip">GIF는 프레임 목록으로 분해돼. 삭제하고 싶은 프레임을 필름스트립에서 선택한 뒤 Delete 키나 “현재 프레임 삭제”를 누르면 돼. 시트 프리뷰는 항상 오른쪽에서 RGBA/R/G/B/A로 확인 가능해.</div></section>
+    </div>
+
   </div>
 </aside>
 </main>
