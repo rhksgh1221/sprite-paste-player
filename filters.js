@@ -1,5 +1,5 @@
 // Game-sprite stylization filter pipeline.
-// Order: pixelate -> color grade (hue/sat/contrast/bright) -> cel shade -> recolor (gradient map) -> alpha clean -> outline.
+// Order: pixelate -> color grade -> cel shade -> recolor -> alpha generation/cleanup -> outline.
 export const RAMPS={fire:['#12020a','#8b1026','#ff6a00','#ffd166'],ice:['#07111f','#145da0','#7de2ff','#ffffff'],toxic:['#06120a','#1f7a1f','#9cff00','#f7ffb6'],mono:['#000000','#4b5563','#d1d5db','#ffffff']};
 
 export function defaultFilters(){return{enabled:false,bypass:false,
@@ -8,7 +8,7 @@ export function defaultFilters(){return{enabled:false,bypass:false,
   ramp:false,rampPreset:'fire',rampColors:['#12020a','#8b1026','#ff6a00','#ffd166'],rampMix:100,
   pixel:false,pixelSize:4,
   outline:false,outlineColor:'#0a0a12',outlineWidth:1,
-  alphaCut:false,alphaThreshold:50}}
+  alphaCut:false,alphaThreshold:50,alphaValue:100,alphaGen:false,alphaMode:'max'}}
 
 export const FILTER_PRESETS=[
   ['Clean Toon',{enabled:true,cel:true,celSteps:4,outline:true,outlineColor:'#0a0a12',outlineWidth:1,contrast:14}],
@@ -16,6 +16,7 @@ export const FILTER_PRESETS=[
   ['Recolor Fire',{enabled:true,ramp:true,rampPreset:'fire',rampMix:100,cel:true,celSteps:6}],
   ['Recolor Ice',{enabled:true,ramp:true,rampPreset:'ice',rampMix:92,contrast:10}],
   ['Crisp Sprite',{enabled:true,alphaCut:true,alphaThreshold:55,outline:true,outlineColor:'#000000',outlineWidth:1,saturation:10}],
+  ['Auto Alpha VFX',{enabled:true,alphaGen:true,alphaMode:'max',alphaValue:100,contrast:12,saturation:12}],
   ['Bold Outline',{enabled:true,outline:true,outlineColor:'#0a0a12',outlineWidth:3,contrast:18,saturation:18}]
 ];
 
@@ -40,6 +41,8 @@ function outlineCanvas(dst,color,width){const w=dst.width,h=dst.height,ctx=dst.g
   for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(!dx&&!dy)continue;if(dx*dx+dy*dy>r*r+1)continue;ctx.drawImage(sil,dx,dy)}
   ctx.drawImage(orig,0,0)}
 
+function autoAlpha(mode,r,g,b){const lum=r*.299+g*.587+b*.114,max=Math.max(r,g,b),min=Math.min(r,g,b);if(mode==='luma')return lum;if(mode==='inverse')return 255-lum;if(mode==='min')return min;return max}
+
 export function applyFilters(src,dst,filters,frame=0){
   dst.width=src.width;dst.height=src.height;
   const dctx=dst.getContext('2d',{willReadFrequently:true});
@@ -47,14 +50,15 @@ export function applyFilters(src,dst,filters,frame=0){
   const f=filters;if(!f.enabled||f.bypass)return;
   // pixelate (geometry) first so later passes act on the blocky pixels
   if(f.pixel&&f.pixelSize>1){const step=f.pixelSize,tw=Math.max(1,Math.round(dst.width/step)),th=Math.max(1,Math.round(dst.height/step)),tmp=document.createElement('canvas');tmp.width=tw;tmp.height=th;const tctx=tmp.getContext('2d');tctx.imageSmoothingEnabled=false;tctx.drawImage(dst,0,0,tw,th);dctx.clearRect(0,0,dst.width,dst.height);dctx.imageSmoothingEnabled=false;dctx.drawImage(tmp,0,0,tw,th,0,0,dst.width,dst.height)}
-  const needGrade=!!(f.brightness||f.contrast||f.saturation||f.hue),celOn=!!f.cel,rampOn=!!f.ramp,aOn=!!f.alphaCut;
-  if(needGrade||celOn||rampOn||aOn){
+  const needGrade=!!(f.brightness||f.contrast||f.saturation||f.hue),celOn=!!f.cel,rampOn=!!f.ramp,aOn=!!f.alphaCut,alphaGen=!!f.alphaGen,alphaScale=(f.alphaValue==null?100:f.alphaValue)/100;
+  if(needGrade||celOn||rampOn||aOn||alphaGen||alphaScale!==1){
     const con=(f.contrast+100)/100,sat=(f.saturation+100)/100,bri=f.brightness/100*255,hm=f.hue?hueRotation(f.hue):null;
     const celStep=Math.max(2,Math.min(8,f.celSteps|0))-1;
     const pal=rampOn?getRampPalette(f):null,mix=Math.max(0,Math.min(1,(f.rampMix==null?100:f.rampMix)/100));
     const aTh=Math.round(Math.max(0,Math.min(100,f.alphaThreshold))/100*255);
     const img=dctx.getImageData(0,0,dst.width,dst.height),d=img.data;
-    for(let i=0;i<d.length;i+=4){let a=d[i+3];if(a===0)continue;let r=d[i],g=d[i+1],b=d[i+2];
+    for(let i=0;i<d.length;i+=4){let a=d[i+3];let r=d[i],g=d[i+1],b=d[i+2];
+      if(a===0&&!alphaGen)continue;
       if(hm){const nr=hm[0]*r+hm[1]*g+hm[2]*b,ng=hm[3]*r+hm[4]*g+hm[5]*b,nb=hm[6]*r+hm[7]*g+hm[8]*b;r=nr;g=ng;b=nb}
       if(f.saturation){const l=r*.299+g*.587+b*.114;r=l+(r-l)*sat;g=l+(g-l)*sat;b=l+(b-l)*sat}
       if(f.contrast){r=(r-128)*con+128;g=(g-128)*con+128;b=(b-128)*con+128}
@@ -62,6 +66,8 @@ export function applyFilters(src,dst,filters,frame=0){
       r=clamp8(r);g=clamp8(g);b=clamp8(b);
       if(celOn){const lum=r*.299+g*.587+b*.114;if(lum>1){const q=Math.round(lum/255*celStep)/celStep*255,ratio=q/lum;r=clamp8(r*ratio);g=clamp8(g*ratio);b=clamp8(b*ratio)}else{r=0;g=0;b=0}}
       if(rampOn){const lum=(r*.299+g*.587+b*.114)/255,rc=rampColor(lum,pal);r=lerp(r,rc[0],mix);g=lerp(g,rc[1],mix);b=lerp(b,rc[2],mix)}
+      if(alphaGen)a=autoAlpha(f.alphaMode,r,g,b);
+      if(alphaScale!==1)a=clamp8(a*alphaScale);
       if(aOn)a=a<aTh?0:255;
       d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=a}
     dctx.putImageData(img,0,0)}
