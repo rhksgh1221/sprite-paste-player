@@ -9,7 +9,8 @@ export function defaultFilters(){return{enabled:false,bypass:false,
   pixel:false,pixelSize:4,
   outline:false,outlineColor:'#0a0a12',outlineWidth:1,
   alphaCut:false,alphaThreshold:50,alphaValue:100,alphaGen:false,alphaMode:'max',alphaSmooth:false,alphaSmoothRadius:2,
-  colorDrop:false,dropColor:'#000000',dropTolerance:12,dropSoftness:16}}
+  colorDrop:false,dropColor:'#000000',dropTolerance:12,dropSoftness:16,
+  colorKey:false,keyColor:'#000000',keyTolerance:12,keySoftness:16}}
 
 export const FILTER_PRESETS=[
   ['Clean Toon',{enabled:true,cel:true,celSteps:4,outline:true,outlineColor:'#0a0a12',outlineWidth:1,contrast:14}],
@@ -18,7 +19,7 @@ export const FILTER_PRESETS=[
   ['Recolor Ice',{enabled:true,ramp:true,rampPreset:'ice',rampMix:92,contrast:10}],
   ['Crisp Sprite',{enabled:true,alphaCut:true,alphaThreshold:55,alphaSmooth:true,alphaSmoothRadius:1,outline:true,outlineColor:'#000000',outlineWidth:1,saturation:10}],
   ['Auto Alpha VFX',{enabled:true,alphaGen:true,alphaMode:'max',alphaValue:100,alphaSmooth:true,alphaSmoothRadius:2,contrast:12,saturation:12}],
-  ['Drop Black',{enabled:true,colorDrop:true,dropColor:'#000000',dropTolerance:12,dropSoftness:18,alphaSmooth:true,alphaSmoothRadius:2}],
+  ['Drop Black',{enabled:true,colorDrop:true,colorKey:true,dropColor:'#000000',keyColor:'#000000',dropTolerance:12,keyTolerance:12,dropSoftness:18,keySoftness:18,alphaSmooth:true,alphaSmoothRadius:2}],
   ['Bold Outline',{enabled:true,outline:true,outlineColor:'#0a0a12',outlineWidth:3,contrast:18,saturation:18}]
 ];
 
@@ -47,7 +48,7 @@ function outlineCanvas(dst,color,width){const w=dst.width,h=dst.height,ctx=dst.g
 
 function autoAlpha(mode,r,g,b){const lum=r*.299+g*.587+b*.114,max=Math.max(r,g,b),min=Math.min(r,g,b);if(mode==='luma')return lum;if(mode==='inverse')return 255-lum;if(mode==='min')return min;return max}
 
-function dropFactor(f,r,g,b){const k=hexToRgb(f.dropColor||'#000000'),maxD=Math.sqrt(3)*255,tol=clampPct(f.dropTolerance)/100*maxD,soft=clampPct(f.dropSoftness)/100*maxD,dr=r-k[0],dg=g-k[1],db=b-k[2],dist=Math.sqrt(dr*dr+dg*dg+db*db);if(soft<=0)return dist<=tol?0:1;return clamp01((dist-tol)/soft)}
+function dropFactor(f,r,g,b){const k=hexToRgb(f.dropColor||f.keyColor||'#000000'),maxD=Math.sqrt(3)*255,tol=clampPct(f.dropTolerance??f.keyTolerance??12)/100*maxD,soft=clampPct(f.dropSoftness??f.keySoftness??16)/100*maxD,dr=r-k[0],dg=g-k[1],db=b-k[2],dist=Math.sqrt(dr*dr+dg*dg+db*db);if(soft<=0)return dist<=tol?0:1;return clamp01((dist-tol)/soft)}
 
 function smoothAlpha(img,radius){const w=img.width,h=img.height,d=img.data,r=Math.max(1,Math.min(8,radius|0)),tmp=new Float32Array(w*h),out=new Uint8ClampedArray(w*h);for(let y=0;y<h;y++){for(let x=0;x<w;x++){let sum=0,c=0;for(let xx=Math.max(0,x-r);xx<=Math.min(w-1,x+r);xx++){sum+=d[(y*w+xx)*4+3];c++}tmp[y*w+x]=sum/c}}for(let y=0;y<h;y++){for(let x=0;x<w;x++){let sum=0,c=0;for(let yy=Math.max(0,y-r);yy<=Math.min(h-1,y+r);yy++){sum+=tmp[yy*w+x];c++}out[y*w+x]=sum/c}}for(let i=0;i<out.length;i++)d[i*4+3]=out[i]}
 
@@ -58,7 +59,7 @@ export function applyFilters(src,dst,filters,frame=0){
   const f=filters;if(!f.enabled||f.bypass)return;
   // pixelate (geometry) first so later passes act on the blocky pixels
   if(f.pixel&&f.pixelSize>1){const step=f.pixelSize,tw=Math.max(1,Math.round(dst.width/step)),th=Math.max(1,Math.round(dst.height/step)),tmp=document.createElement('canvas');tmp.width=tw;tmp.height=th;const tctx=tmp.getContext('2d');tctx.imageSmoothingEnabled=false;tctx.drawImage(dst,0,0,tw,th);dctx.clearRect(0,0,dst.width,dst.height);dctx.imageSmoothingEnabled=false;dctx.drawImage(tmp,0,0,tw,th,0,0,dst.width,dst.height)}
-  const needGrade=!!(f.brightness||f.contrast||f.saturation||f.hue),celOn=!!f.cel,rampOn=!!f.ramp,aOn=!!f.alphaCut,alphaGen=!!f.alphaGen,dropOn=!!f.colorDrop,smoothOn=!!f.alphaSmooth,alphaScale=(f.alphaValue==null?100:f.alphaValue)/100;
+  const needGrade=!!(f.brightness||f.contrast||f.saturation||f.hue),celOn=!!f.cel,rampOn=!!f.ramp,aOn=!!f.alphaCut,alphaGen=!!f.alphaGen,dropOn=!!(f.colorDrop||f.colorKey),smoothOn=!!f.alphaSmooth,alphaScale=(f.alphaValue==null?100:f.alphaValue)/100;
   if(needGrade||celOn||rampOn||aOn||alphaGen||dropOn||smoothOn||alphaScale!==1){
     const con=(f.contrast+100)/100,sat=(f.saturation+100)/100,bri=f.brightness/100*255,hm=f.hue?hueRotation(f.hue):null;
     const celStep=Math.max(2,Math.min(8,f.celSteps|0))-1;
