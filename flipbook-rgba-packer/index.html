@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="수동 Grid와 프레임 순서로 플립북 마스크를 RGBA 채널에 패킹하는 로컬 VFX 텍스처 도구">
+  <meta name="theme-color" content="#171a20">
+  <meta name="color-scheme" content="dark">
+  <title>Flipbook RGBA Packer</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div>
+        <h1>Flipbook RGBA Packer</h1>
+        <div class="version">Manual Grid / Manual Frame Mapping · v<span id="versionText">2.3.0</span></div>
+      </div>
+    </div>
+    <div class="header-status" id="headerStatus">PNG/TGA 파일을 불러와 주세요.</div>
+    <div class="header-actions">
+      <button id="settingsToggle" class="ghost compact layout-toggle" type="button" aria-controls="settingsSidebar" aria-expanded="false" data-allow-busy="true">설정</button>
+      <button id="exportToggle" class="ghost compact layout-toggle" type="button" aria-controls="exportSidebar" aria-expanded="false" data-allow-busy="true">내보내기</button>
+      <button id="helpButton" class="ghost" data-allow-busy="true">사용법</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="sidebar left" id="settingsSidebar" aria-label="설정 패널">
+      <div class="drawer-head">
+        <strong>설정</strong>
+        <button id="closeSettings" class="compact ghost" type="button" aria-label="설정 패널 닫기" data-allow-busy="true">닫기</button>
+      </div>
+      <section class="panel-section">
+        <div class="section-title"><span>입력 파일</span><small><span id="fileCount">0</span>개</small></div>
+        <div class="drop-zone" id="dropZone">
+          <strong>PNG / TGA 드래그</strong>
+          <span>파일은 브라우저 밖으로 전송되지 않아</span>
+        </div>
+        <input id="fileInput" class="hidden" type="file" multiple accept=".png,.tga,.jpg,.jpeg,.webp,.bmp,image/*">
+        <input id="folderInput" class="hidden" type="file" multiple webkitdirectory directory>
+        <div class="file-toolbar">
+          <button id="chooseFiles" class="compact">파일 선택</button>
+          <button id="chooseFolder" class="compact">폴더 선택</button>
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <div class="button-row">
+          <button id="removeCurrent" class="compact danger">현재 제거</button>
+          <button id="clearFiles" class="compact">전체 비우기</button>
+        </div>
+        <button id="applyToAll" class="compact full-button">현재 설정을 전체 파일에 적용</button>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>1. 소스 Grid</span><small>수동</small></div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="gridCols">가로 프레임 수</label>
+            <input id="gridCols" data-requires-file="true" type="number" min="1" step="1" value="4">
+          </div>
+          <div class="field">
+            <label for="gridRows">세로 프레임 수</label>
+            <input id="gridRows" data-requires-file="true" type="number" min="1" step="1" value="4">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>2. 사용할 프레임</span><small>입력 순서 = RGBA</small></div>
+        <div class="field">
+          <label for="frameSpec">프레임 번호 / 범위</label>
+          <div class="inline-input">
+            <input id="frameSpec" data-requires-file="true" type="text" value="0-15" placeholder="예: 0-15 또는 0,4,8,12">
+            <button id="applyFrameSpec" data-requires-file="true" class="compact primary">적용</button>
+          </div>
+        </div>
+        <div class="quick-buttons compact-gap">
+          <button data-requires-file="true" data-quick-count="4" class="compact">첫 4</button>
+          <button data-requires-file="true" data-quick-count="8" class="compact">첫 8</button>
+          <button data-requires-file="true" data-quick-count="12" class="compact">첫 12</button>
+          <button data-requires-file="true" data-quick-count="16" class="compact">첫 16</button>
+        </div>
+        <div class="button-row">
+          <button id="selectAllFrames" data-requires-file="true" class="compact">전체 선택</button>
+          <button id="clearFrames" data-requires-file="true" class="compact">선택 해제</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>3. 색 제거 / 마스크</span><small>기본 Max RGB</small></div>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="maskMode">마스크 추출 기준</label>
+            <select id="maskMode" data-requires-file="true">
+              <option value="maxrgb" selected>Max RGB</option>
+              <option value="alpha">Alpha</option>
+              <option value="luma">Luminance</option>
+              <option value="r">Red</option>
+              <option value="g">Green</option>
+              <option value="b">Blue</option>
+            </select>
+          </div>
+          <div id="maskHint" class="inline-alert hidden field full">
+            <span>이 소스의 Alpha가 전부 255야.</span>
+            <button id="useMaxRgb" data-requires-file="true" type="button" class="text-button">Max RGB 적용</button>
+          </div>
+          <details class="advanced-box field full">
+            <summary>마스크 세부 설정</summary>
+            <div class="advanced-content form-grid">
+              <label class="check-row field full"><input id="multiplyAlpha" data-requires-file="true" type="checkbox" checked> RGB 추출값에 원본 Alpha 곱하기</label>
+              <label class="check-row field full"><input id="invertMask" data-requires-file="true" type="checkbox"> 마스크 반전</label>
+              <div class="field full">
+                <div class="subsection-label"><span>레벨 보정</span><button id="resetLevels" data-requires-file="true" class="text-button" type="button">초기화</button></div>
+              </div>
+              <div class="field">
+                <label for="blackPoint">검정점</label>
+                <input id="blackPoint" data-requires-file="true" type="number" min="0" max="254" step="1" value="0">
+              </div>
+              <div class="field">
+                <label for="whitePoint">흰점</label>
+                <input id="whitePoint" data-requires-file="true" type="number" min="1" max="255" step="1" value="255">
+              </div>
+              <div class="field full">
+                <label for="gamma">감마 <span id="gammaValue" class="value-hint">1.00</span></label>
+                <input id="gamma" data-requires-file="true" type="range" min="0.10" max="4.00" step="0.01" value="1.00">
+              </div>
+              <div class="field full">
+                <label for="alignment">불균등 셀 패딩 정렬</label>
+                <select id="alignment" data-requires-file="true">
+                  <option value="top-left">좌상단 고정</option>
+                  <option value="center">중앙 정렬</option>
+                </select>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>4. Pack / 출력</span><small>수동 가능</small></div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="packCols">Pack 가로 수</label>
+            <input id="packCols" data-requires-file="true" type="number" min="1" step="1" value="2">
+          </div>
+          <div class="field">
+            <label for="packRows">Pack 세로 수</label>
+            <input id="packRows" data-requires-file="true" type="number" min="1" step="1" value="2">
+          </div>
+          <label class="check-row field full"><input id="autoLayout" data-requires-file="true" type="checkbox" checked> 선택 수 변경 시 추천 배치 적용</label>
+          <button id="applyRecommend" data-requires-file="true" class="compact field full">추천값 적용</button>
+
+          <div class="field full output-size-divider">
+            <div class="subsection-label"><span>최종 텍스쳐 크기</span><span id="outputAspectLabel" class="value-hint">비율 -</span></div>
+          </div>
+          <div class="field full">
+            <label for="outputSizeMode">크기 방식</label>
+            <select id="outputSizeMode" data-requires-file="true">
+              <option value="auto">자동 · 원본 셀 크기 유지</option>
+              <option value="manual">수동 · 가로/세로 px 지정</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="outputWidth">출력 가로 px</label>
+            <input id="outputWidth" data-requires-file="true" type="number" min="1" step="1" placeholder="1024">
+          </div>
+          <div class="field">
+            <label for="outputHeight">출력 세로 px</label>
+            <input id="outputHeight" data-requires-file="true" type="number" min="1" step="1" placeholder="1024">
+          </div>
+          <details class="advanced-box field full">
+            <summary>출력 세부 설정</summary>
+            <div class="advanced-content form-grid">
+              <label class="check-row field full"><input id="lockOutputAspect" data-requires-file="true" type="checkbox" checked> 현재 가로:세로 비율 고정</label>
+              <div class="field full">
+                <label for="resizeFilter">리사이즈 방식</label>
+                <select id="resizeFilter" data-requires-file="true">
+                  <option value="bilinear">Bilinear · 부드러운 마스크</option>
+                  <option value="nearest">Nearest · 픽셀 경계 유지</option>
+                </select>
+              </div>
+              <button id="useNativeOutputSize" data-requires-file="true" class="compact field full">자동 크기를 수동값으로 가져오기</button>
+              <div class="field full">
+                <label for="outputSuffix">출력 파일 접미사</label>
+                <input id="outputSuffix" data-requires-file="true" type="text" value="_RGBA_Pack">
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="canvas-grid">
+        <article class="canvas-card">
+          <div class="card-header">
+            <div class="card-title">원본 / 프레임 선택</div>
+            <div class="card-meta">셀 클릭으로 선택·해제</div>
+          </div>
+          <div class="canvas-stage empty" id="sourceStage">
+            <canvas id="sourceCanvas" width="1" height="1"></canvas>
+          </div>
+        </article>
+
+        <article class="canvas-card">
+          <div class="card-header">
+            <div class="card-title">RGBA Pack 프리뷰</div>
+            <div class="preview-tabs">
+              <button class="active" data-preview="rgb">RGB</button>
+              <button data-preview="raw">Raw</button>
+              <button data-preview="r">R</button>
+              <button data-preview="g">G</button>
+              <button data-preview="b">B</button>
+              <button data-preview="a">A</button>
+            </div>
+          </div>
+          <div class="canvas-stage empty" id="outputStage">
+            <canvas id="outputCanvas" width="1" height="1"></canvas>
+          </div>
+        </article>
+      </div>
+
+      <section class="order-panel">
+        <div class="order-header">
+          <span class="order-title">프레임 순서 · <span id="selectionCount">0</span>개</span>
+          <span class="order-help">R → G → B → A · 드래그로 순서 변경</span>
+        </div>
+        <div class="frame-chips" id="frameChips"></div>
+      </section>
+    </section>
+
+    <aside class="sidebar right" id="exportSidebar" aria-label="내보내기 패널">
+      <div class="drawer-head">
+        <strong>내보내기</strong>
+        <button id="closeExport" class="compact ghost" type="button" aria-label="내보내기 패널 닫기" data-allow-busy="true">닫기</button>
+      </div>
+      <section class="panel-section export-panel">
+        <div class="section-title"><span>내보내기</span><small>검증 통과 후 활성화</small></div>
+        <div id="compactStatus" class="compact-status idle">
+          <strong>파일 대기</strong>
+          <span id="compactStatusDetail">텍스쳐를 불러오면 자동으로 검증해.</span>
+        </div>
+        <div class="export-buttons primary-exports">
+          <div class="split">
+            <button id="exportTga" class="primary">현재 TGA</button>
+            <button id="exportPng">현재 PNG</button>
+          </div>
+          <button id="exportCurrentZip">현재 결과 ZIP</button>
+          <button id="exportBatchZip" class="primary">전체 파일 일괄 ZIP</button>
+        </div>
+
+        <details class="extra-output">
+          <summary>추가 출력 / Preset</summary>
+          <div class="advanced-content">
+            <div class="field">
+              <label for="tgaOrigin">TGA 원점</label>
+              <select id="tgaOrigin" data-requires-file="true">
+                <option value="bottom-left">하단-좌측 · 레퍼런스 호환</option>
+                <option value="top-left">상단-좌측</option>
+              </select>
+            </div>
+            <div class="export-options">
+              <label class="check-row"><input id="exportRawPng" type="checkbox"> Raw RGBA PNG</label>
+              <label class="check-row"><input id="exportMapping" type="checkbox"> Mapping JSON</label>
+              <label class="check-row"><input id="exportRgbPreview" type="checkbox"> RGB 프리뷰</label>
+              <label class="check-row"><input id="exportAlphaPreview" type="checkbox"> A 흰색 프리뷰</label>
+              <label class="check-row"><input id="exportChannelBoard" type="checkbox"> 채널 보드</label>
+            </div>
+            <div class="preset-actions">
+              <div class="split">
+                <button id="savePreset">Preset 저장</button>
+                <button id="loadPreset">Preset 불러오기</button>
+              </div>
+              <input id="presetInput" class="hidden" type="file" accept=".json,application/json">
+            </div>
+          </div>
+        </details>
+      </section>
+    </aside>
+  </main>
+
+  <button id="drawerBackdrop" class="drawer-backdrop" type="button" aria-label="열린 패널 닫기" data-allow-busy="true"></button>
+
+  <dialog class="modal" id="helpDialog">
+    <header>
+      <h2>Flipbook RGBA Packer 사용법</h2>
+      <button id="closeHelp" class="compact">닫기</button>
+    </header>
+    <div class="content">
+      <p><strong>핵심 규칙:</strong> 입력한 프레임을 4개씩 묶어 R, G, B, A에 기록해. 마지막 Pack에 프레임이 부족하면 남는 채널은 0으로 채워져.</p>
+      <p><strong>4×5에서 마지막 줄 제외:</strong> Grid를 <code>4 × 5</code>로 입력하고 프레임을 <code>0-15</code>로 지정하면 16-19번은 쓰지 않아.</p>
+      <p><strong>3×3 / 9프레임:</strong> 마지막 Pack은 <code>R=Frame 8</code>, <code>G/B/A=0</code>으로 처리돼.</p>
+      <p><strong>색 제거:</strong> 기본값은 <code>Max RGB</code>야. Alpha가 실제 형태 데이터인 소스만 <code>Alpha</code>로 바꿔 사용해.</p>
+      <p><strong>출력 크기:</strong> 자동은 원본 셀 크기를 유지하고, 수동은 최종 가로·세로 픽셀을 직접 지정해.</p>
+      <p><strong>검증:</strong> 소스 프레임과 RGBA 채널을 비교하고 TGA를 다시 열어 한 번 더 확인해. 검증이 통과해야 저장 버튼이 활성화돼.</p>
+      <p><strong>주의:</strong> 일반 이미지 뷰어는 A 채널을 투명도로 표시해 RGB를 가릴 수 있어. 프로그램의 RGB/R/G/B/A 탭으로 확인해.</p>
+      <p><strong>개인정보:</strong> 모든 처리는 브라우저 안에서만 이루어지고 파일은 외부로 전송되지 않아.</p>
+    </div>
+    <footer><button onclick="document.getElementById('helpDialog').close()" class="primary">확인</button></footer>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/core.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
